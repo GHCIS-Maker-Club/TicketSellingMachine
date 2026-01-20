@@ -334,8 +334,8 @@ LED_FROM_PIN_1 = Pin(-1, Pin.IN, Pin.PULL_DOWN) #从LED输入的第一个引脚
 LED_FROM_PIN_2 = Pin(-1, Pin.IN, Pin.PULL_DOWN)#从LED输入的第二个引脚
 BUTTON_PIN_1 = Pin(-1, Pin.IN, Pin.PULL_DOWN) #"下一个"按钮的引脚
 BUTTON_PIN_2 = Pin(-1, Pin.IN, Pin.PULL_DOWN) #"确认"按钮的引脚
-DFPLAYER_MINI_TX_PIN_NUMBER = -1
-DFPLAYER_MINI_RX_PIN_NUMBER = -1
+DFPLAYER_MINI_TX_PIN_NUMBER = 26
+DFPLAYER_MINI_RX_PIN_NUMBER = 27
 #----------DFPlayer Mini----------
 music = Player(pin_TX = DFPLAYER_MINI_TX_PIN_NUMBER, pin_RX = DFPLAYER_MINI_RX_PIN_NUMBER)
 music.volume(20)
