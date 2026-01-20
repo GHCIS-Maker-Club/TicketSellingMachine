@@ -2,6 +2,7 @@
 """要修改请拉到最底下的函数进行修改
 """
 from machine import UART, Pin
+from dfplayermini import Player
 
 # 设置对齐方式(不要修改！！！！)
 left = bytes([0x1B, 0x61, 0x00])
