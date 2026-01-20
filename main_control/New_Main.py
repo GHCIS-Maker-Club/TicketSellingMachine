@@ -328,12 +328,17 @@ def print_ticket(station_number: int):
 
 
 #----------SETUP----------
-LED_TO_PIN_1 = Pin(-1, Pin.OUT) #往LED输出的第一个引脚
-LED_TO_PIN_2 = Pin(-1, Pin.OUT) #往LED输出的第二个引脚
-LED_FROM_PIN_1 = Pin(-1, Pin.IN, Pin.PULL_DOWN) #从LED输入的第一个引脚
-LED_FROM_PIN_2 = Pin(-1, Pin.IN, Pin.PULL_DOWN)#从LED输入的第二个引脚
-BUTTON_PIN_1 = Pin(-1, Pin.IN, Pin.PULL_DOWN) #"下一个"按钮的引脚
-BUTTON_PIN_2 = Pin(-1, Pin.IN, Pin.PULL_DOWN) #"确认"按钮的引脚
+#主控模块 LED模块
+#12 -> 34
+#13 -> 35
+#21 <- 21
+#22 <- 22
+LED_TO_PIN_1 = Pin(13, Pin.OUT) #往LED输出的第一个引脚
+LED_TO_PIN_2 = Pin(12, Pin.OUT) #往LED输出的第二个引脚
+LED_FROM_PIN_1 = Pin(21, Pin.IN, Pin.PULL_DOWN) #从LED输入的第一个引脚
+LED_FROM_PIN_2 = Pin(22, Pin.IN, Pin.PULL_DOWN)#从LED输入的第二个引脚
+BUTTON_PIN_1 = Pin(4, Pin.IN, Pin.PULL_DOWN) #"下一个"按钮的引脚
+BUTTON_PIN_2 = Pin(5, Pin.IN, Pin.PULL_DOWN) #"确认"按钮的引脚
 DFPLAYER_MINI_TX_PIN_NUMBER = 26
 DFPLAYER_MINI_RX_PIN_NUMBER = 27
 #----------DFPlayer Mini----------
