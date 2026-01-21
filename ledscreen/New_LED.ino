@@ -34,10 +34,10 @@
 #define CLK 33
 #define LAT 4
 #define OE  15
-#define LED_IN_PIN_1 -1 //TODO
-#define LED_IN_PIN_2 -1
-#define LED_OUT_PIN_1 -1
-#define LED_OUT_PIN_2 -1
+#define LED_IN_PIN_1 34 //TODO
+#define LED_IN_PIN_2 35
+#define LED_OUT_PIN_1 21
+#define LED_OUT_PIN_2 22
 
 #define PANEL_RES_X     64     // Number of pixels wide of each INDIVIDUAL panel module. 
 #define PANEL_RES_Y     64     // Number of pixels tall of each INDIVIDUAL panel module.
@@ -53,6 +53,20 @@
 MatrixPanel_I2S_DMA *dma_display = nullptr;
 
 VirtualMatrixPanel_T<PANEL_CHAIN_TYPE>* virtualDisp = nullptr;
+
+int return_random_integer() {
+    /*
+    // thread_local so each thread gets its own generator (safe in multithreaded code)
+    static thread_local std::mt19937 rng{ std::random_device{}() };
+
+    // uniform_int_distribution with inclusive bounds
+    static thread_local std::uniform_int_distribution<int> dist{800, 4000};
+
+    return dist(rng);
+    */
+    randomSeed(millis());
+    return random(200) + 300;
+}
 
 
 void setup_display(){
@@ -183,15 +197,25 @@ void send_message_to_control(bool is_pass, bool is_change, bool is_confirm){
     if(i2c_msg == "pick pass"){
       //把第一根线写高10微秒
       digitalWrite(LED_OUT_PIN_1, HIGH);
-      delayMicroseconds(40); //为了让主控模块运行完sleep_us(10)以及剩下的代码, 不会影响后续因为主控每次执行完毕会delay个50毫秒左右
+      delay(50); //为了让主控模块运行完sleep_ms(10)以及剩下的代码, 不会影响后续因为主控每次执行完毕会delay个50毫秒左右
       digitalWrite(LED_OUT_PIN_1, LOW);
     }
 }
 
 
 void send_confirm_message() {
+  Serial.print("Picked ");
+  Serial.println(cur_pick_param);
+  for(int i=1; i<=cur_pick_param; i++){
+    digitalWrite(LED_OUT_PIN_1, HIGH);
+    delay(50);
+    digitalWrite(LED_OUT_PIN_1, LOW);
+    delay(50);
+    Serial.print("Writing HIGH AND LOW at ");
+    Serial.println(i);
+  }
   digitalWrite(LED_OUT_PIN_2, HIGH);
-  delayMicroseconds(40);
+  delay(50);
   digitalWrite(LED_OUT_PIN_2, LOW);
 }
 
@@ -243,10 +267,10 @@ void draw_LeftStationList(int &centeredAt){ //省空间
 }
 
 void draw_station_description(int &station_no){
-  //应当从x=63开始画到x=127
+  //应当从x=58开始画到x=122
   //station_no可以从0到21
-  uint16_t color = virtualDisp -> color565(255, 255, 255);
-  int cur_x = 63, cur_y = 0;
+  uint16_t color = virtualDisp -> color565(150, 255, 150);
+  int cur_x = 58, cur_y = 0;
   for(int i=0; i<MAX_INDEX_PER_DESCRIPTION; i++){
     //解码一个byte
     auto cur_byte = station_description[station_no][i];
@@ -258,8 +282,8 @@ void draw_station_description(int &station_no){
       }
       //否则不用画
       cur_x ++;
-      if(cur_x >= 128){
-        cur_x = 63;
+      if(cur_x >= 123){
+        cur_x = 58;
         cur_y ++;
       }
     }
@@ -283,8 +307,8 @@ void draw_station_description(int &station_no){
 
 void draw_ticket_interface(int &station_no){
   draw_LeftStationList(station_no);
-  uint16_t color = virtualDisp -> color565(255, 255, 255);
-  int cur_x = 63, cur_y = 0;
+  uint16_t color = virtualDisp -> color565(150, 255, 150);
+  int cur_x = 58, cur_y = 0;
   for(int i=0; i<MAX_INDEX_PER_DESCRIPTION; i++){
     //解码一个byte
     auto cur_byte = station_description[station_no][i];
@@ -296,8 +320,8 @@ void draw_ticket_interface(int &station_no){
       }
       //否则不用画
       cur_x ++;
-      if(cur_x >= 128){
-        cur_x = 63;
+      if(cur_x >= 123){
+        cur_x = 58;
         cur_y ++;
       }
     }
@@ -318,16 +342,18 @@ void draw_ticket_interface(int &station_no){
   */
   }
 }
-
+int rounds_until_finishing_pick;
 void (*draw_init_interfaces[])() = {draw_init_0, draw_init_1};
 void determine_for_init_interface(String input) {
     if (input == NONE_COMMAND) {
         draw_init_interfaces[cur_init_param]();
+        /*
         String ans = "nothing00";
         for(auto u: ans){
           Wire.write(u);
         }
         return;
+        */
     }
     else if (input == CHANGE_COMMAND) {
         //换到下一个按钮
@@ -349,14 +375,18 @@ void determine_for_init_interface(String input) {
             draw_ticket_interface(cur_check_param);
             //跳转到查看状态
             cur_interface = CHECK;
+            Serial.println("Switching to check");
             return;
         }
         else {
             //对应来一发状态
             send_message_to_control(false, false, true);
             cur_interface = PICK;
+            //设定一个随机量
+            rounds_until_finishing_pick = return_random_integer();
             virtualDisp -> fillScreenRGB888(0, 0, 0);
             draw_ticket_interface(cur_pick_param);
+            Serial.println("Switching to pick");
             return;
         }
     }
@@ -367,11 +397,13 @@ int delayRound = 0;
 
 void determine_for_check_interface(String input) {
     if (input == NONE_COMMAND) {
+        /*
         String ans = "nothing00";
         for(auto u: ans){
           Wire.write(u);
         }
         //draw_ticket_interface(cur_check_param);
+        */
         return;
     }
     else if (input == CHANGE_COMMAND) {
@@ -386,23 +418,30 @@ void determine_for_check_interface(String input) {
         //点到了返回按钮
         send_message_to_control(false, false, true);
         cur_interface = INIT;
+        Serial.println("Switching to init");
         virtualDisp -> fillScreenRGB888(0, 0, 0);
         return;
     }
 }
+
 void determine_for_pick(String input){
-    if (input == NONE_COMMAND || input == CHANGE_COMMAND) {
+    //Serial.println(rounds_until_finishing_pick);
+    Serial.println(rounds_until_finishing_pick);
+    if (rounds_until_finishing_pick) {
         //抽票, 所以下一个界面, 无论有没有按下"下一个"的按钮
-        send_message_to_control(true, false, false);
+        //Serial.println("Pick pass");
+        rounds_until_finishing_pick --;
+       // send_message_to_control(true, false, false);
         cur_pick_param ++;
         if (cur_pick_param > PICK_MAX_INDEX) cur_pick_param = 0;
         draw_ticket_interface(cur_pick_param);
     }
     else {
-        //按下确认
+        //到了
+        //Serial.println("Pick confirm");
         send_confirm_message(); //打印是主控模块的事情
         //draw_picked_image(cur_pick_param); //播放结算画面
-        delayRound = 60;
+        delayRound = 15000;
         cur_interface = INIT; //返回初始界面
         //virtualDisp -> fillScreenRGB888(0, 0, 0);
         cur_init_param = 0;
@@ -410,14 +449,27 @@ void determine_for_pick(String input){
         return;
     }
 }
+bool st = 0;
 String input = "";
+int invalid_round = 0;
 void Determine_Input(){
+  if(invalid_round){
+    invalid_round --;
+    if(invalid_round < 0)invalid_round = 0;
+    input = NONE_COMMAND;
+    return;
+  }
   int pin1_st = digitalRead(LED_IN_PIN_1);
-  int pin2_st = digitalRead(LED_IN_PIN_1);
+  int pin2_st = digitalRead(LED_IN_PIN_2);
   //pin1和python文件中的pin1内容一致, 均代表"下一个"按钮; pin2代表"确认"按钮
   if (pin1_st) input = CONFIRM_COMMAND;
   else if(pin2_st) input = CHANGE_COMMAND;
   else input = NONE_COMMAND;
+  if(input != NONE_COMMAND) {
+    invalid_round = 15;
+  }
+  //Serial.println(input);
+  
 }
 
 
@@ -430,12 +482,15 @@ void Process_Data() {
     }
     switch (cur_interface) {
         case INIT:
+            //Serial.println("Determine for init");
             determine_for_init_interface(input);
             break;
         case CHECK:
+            //Serial.println("Determine for check");
             determine_for_check_interface(input);
             break;
         case PICK:
+            //Serial.println("Determine for pick");
             determine_for_pick(input);
             break;
     }
@@ -446,7 +501,6 @@ void setup(){
     pinMode(LED_IN_PIN_2, INPUT_PULLDOWN);
     pinMode(LED_OUT_PIN_1, OUTPUT);
     pinMode(LED_OUT_PIN_2, OUTPUT);
-
     Serial.begin(115200);
     setup_display();
     Serial.println("Set up display");
@@ -459,4 +513,5 @@ void setup(){
 void loop(){
     Determine_Input();
     Process_Data();
+    delay(1);
 }
