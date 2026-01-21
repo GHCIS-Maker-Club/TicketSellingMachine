@@ -7,6 +7,7 @@
 #define NONE_COMMAND "none"
 #define CHANGE_COMMAND "change"
 #define CONFIRM_COMMAND "confirm"
+#define DIRECT_PICK_COMMAND "direct_pick"
 #define INIT_MAX_INDEX 1
 #define CHECK_MAX_INDEX 21
 #define PICK_MAX_INDEX 21 //注意是Index不是大小
@@ -462,7 +463,8 @@ void Determine_Input(){
   int pin1_st = digitalRead(LED_IN_PIN_1);
   int pin2_st = digitalRead(LED_IN_PIN_2);
   //pin1和python文件中的pin1内容一致, 均代表"下一个"按钮; pin2代表"确认"按钮
-  if (pin1_st) input = CONFIRM_COMMAND;
+  if (pin1_st && pin2_st) input = DIRECT_PICK_COMMAND;
+  else if (pin1_st) input = CONFIRM_COMMAND;
   else if(pin2_st) input = CHANGE_COMMAND;
   else input = NONE_COMMAND;
   if(input != NONE_COMMAND) {
@@ -479,6 +481,17 @@ void Process_Data() {
       if(delayRound < 0)delayRound = 0;
       if(delayRound == 0)virtualDisp -> fillScreenRGB888(0, 0, 0);
       return;
+    }
+    if (input == DIRECT_PICK_COMMAND) {
+        // 直接进入抽奖环节
+        send_message_to_control(false, false, true); // 发送一个确认信号给主控（可选，为了保持一致性）
+        cur_interface = PICK;
+        // 设定一个随机量
+        rounds_until_finishing_pick = return_random_integer();
+        virtualDisp -> fillScreenRGB888(0, 0, 0);
+        draw_ticket_interface(cur_pick_param);
+        Serial.println("Switching to pick (DIRECT)");
+        return;
     }
     switch (cur_interface) {
         case INIT:

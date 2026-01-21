@@ -348,6 +348,7 @@ LED_FROM_PIN_1 = Pin(21, Pin.IN, Pin.PULL_DOWN) #从LED输入的第一个引脚
 LED_FROM_PIN_2 = Pin(22, Pin.IN, Pin.PULL_DOWN)#从LED输入的第二个引脚
 BUTTON_PIN_1 = Pin(4, Pin.IN, Pin.PULL_DOWN) #"下一个"按钮的引脚
 BUTTON_PIN_2 = Pin(5, Pin.IN, Pin.PULL_DOWN) #"确认"按钮的引脚
+BUTTON_PIN_3 = Pin(25, Pin.IN, Pin.PULL_DOWN) #"直接抽奖"按钮的引脚
 DFPLAYER_MINI_TX_PIN_NUMBER = 26
 DFPLAYER_MINI_RX_PIN_NUMBER = 27
 #----------DFPlayer Mini----------
@@ -368,8 +369,20 @@ while True:
    #读按钮引脚
     button_st_1 = BUTTON_PIN_1.value()
     button_st_2 = BUTTON_PIN_2.value()
+    button_st_3 = BUTTON_PIN_3.value()
     if round_button_invalid == 0:
-        if button_st_1 == 1:
+        if button_st_3 == 1:
+            #直接抽奖按钮被按下, 往两根线写高, 并播放音效
+            print("Button 3 (Direct Pick) pressed")
+            LED_TO_PIN_1.on()
+            LED_TO_PIN_2.on()
+            delay_time_short()
+            LED_TO_PIN_1.off()
+            LED_TO_PIN_2.off()
+            play_audio(0) # 播放简单的点击音效
+            round_button_invalid = 6
+            
+        elif button_st_1 == 1:
             #下一个按钮被按下, 往LED的第一根线写高一会,并通知音响播放0
             print("Button 1 pressed")
             LED_TO_PIN_1.on()
