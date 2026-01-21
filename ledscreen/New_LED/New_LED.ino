@@ -173,6 +173,8 @@ void draw_picked_image(int &stationID) {
 
 int cur_interface = INIT; //一开始用户界面为init, 即初始界面
 int cur_init_param = 0, cur_check_param = 0, cur_pick_param = 0;
+unsigned long last_check_interaction_time = 0;
+#define RETURN_TIME_SEC 30
 
 void send_message_to_control(bool is_pass, bool is_change, bool is_confirm){
     String interface_str;//Dummy, 通过I2C把当前interface名称加上" choose"或者"confirm"或者"pass"发送过去, 比如
@@ -376,6 +378,7 @@ void determine_for_init_interface(String input) {
             draw_ticket_interface(cur_check_param);
             //跳转到查看状态
             cur_interface = CHECK;
+            last_check_interaction_time = millis();
             Serial.println("Switching to check");
             return;
         }
@@ -398,6 +401,14 @@ int delayRound = 0;
 
 void determine_for_check_interface(String input) {
     if (input == NONE_COMMAND) {
+        if (millis() - last_check_interaction_time > RETURN_TIME_SEC * 1000) {
+             cur_interface = INIT;
+             Serial.println("Check Interface Timeout - Switching to init");
+             virtualDisp -> fillScreenRGB888(0, 0, 0);
+             cur_init_param = 0;
+             //draw_init_0(); // Main loop will handle this via determine_for_init_interface next cycle
+             return;
+        }
         /*
         String ans = "nothing00";
         for(auto u: ans){
@@ -407,7 +418,11 @@ void determine_for_check_interface(String input) {
         */
         return;
     }
-    else if (input == CHANGE_COMMAND) {
+    
+    // User interaction occurred, reset timer
+    last_check_interaction_time = millis();
+    
+    if (input == CHANGE_COMMAND) {
         send_message_to_control(false, true, false);
         virtualDisp -> fillScreenRGB888(0, 0, 0);
         cur_check_param ++;
