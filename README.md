@@ -1,5 +1,3 @@
-
-https://github.com/user-attachments/assets/78aff1f7-db0b-49fb-8cf2-9953bcf3156d
 # Ticket Selling Machine
 
 A **Ticket Selling Machine** system that simulates a ticket vending experience using a thermal printer, an LED matrix display, audio playback (DFPlayer Mini), and physical buttons. The system is split into two logic units that communicate via GPIO.
